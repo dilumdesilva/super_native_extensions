@@ -39,9 +39,27 @@ android {
 }
 
 
-apply from: "../cargokit/gradle/plugin.gradle"
+// Check if pre-built binaries exist
+def prebuiltLibsDir = file("src/main/jniLibs")
+def hasPrebuiltLibs = prebuiltLibsDir.exists() && prebuiltLibsDir.listFiles()?.any { arch ->
+    new File(arch, "libsuper_native_extensions.so").exists()
+}
 
-cargokit {
-    manifestDir = "../rust"
-    libname = "super_native_extensions"
+if (hasPrebuiltLibs) {
+    // Use pre-built binaries - no Rust compilation needed
+    android {
+        sourceSets {
+            main {
+                jniLibs.srcDirs = ['src/main/jniLibs']
+            }
+        }
+    }
+    println "Using pre-built native libraries for super_native_extensions"
+} else {
+    // Fall back to building from source with Cargo
+    apply from: "../cargokit/gradle/plugin.gradle"
+    cargokit {
+        manifestDir = "../rust"
+        libname = "super_native_extensions"
+    }
 }
